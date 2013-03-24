@@ -7,14 +7,10 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LIBVERSION "0.1"
 #define LIBNAME "libmackerel"
-
-/*
- * CRC functions based on CRC tester 1.3 written by Sven Reifegerste
- * Available at: http://www.zorc.breitbandkatze.de/crc.html
-*/
 
 // CRC parameters (default values are for CRC-32):
 const int order = 32;
@@ -59,6 +55,30 @@ int mac_init ()
 	return(0);
 }
 
+// Verify string is (probably) a MAC
+int mac_verify (char* test_mac)
+{	
+	int i;
+
+	// Make sure it isn't null
+	if (test_mac == NULL)
+		return(1);
+	
+	// See if it's long enough
+	if (strlen(test_mac) != 17)
+		return(1);
+		
+	// See if every 3rd character is a colon
+	for (i = 2; i < 17; i = i + 3)
+	{
+		if ((int)test_mac[i] != 58)
+			return(1);
+	}
+		
+	// If we get here, it's (maybe) a MAC
+	return(0);
+}
+
 // Generate random MAC address
 // Adapted from "SpoofTooph" by JP Dunning (.ronin)
 char* mac_random (void)
@@ -84,6 +104,116 @@ char* mac_random (void)
 	return(addr);
 }
 
+// Generate half of a random MAC address
+char* mac_random_half (void)
+{
+	static char half_buffer[9] = {0};
+	char *full_buffer = {0};
+	
+	// Get a new random MAC
+	full_buffer = mac_random();
+	
+	// Copy half of it to buffer
+	strncpy(half_buffer, full_buffer, 8);
+
+	return(half_buffer);
+}
+
+// Return MAC OUI segment
+char* mac_get_oui (char* full_mac)
+{
+	// Verify first
+	if (mac_verify(full_mac))
+		return("INVALID_MAC");	
+	
+	static char half_buffer[9] = {0};
+	
+	// Copy half of full into buffer, return
+	strncpy(half_buffer, full_mac, 8);
+	return(half_buffer);
+}
+
+// X out the device-specific part of MAC
+char* mac_obfuscate (char* full_mac)
+{
+	// Verify first
+	if (mac_verify(full_mac))
+		return("INVALID_MAC");
+		
+	static char addr_buffer[18] = {0};
+	
+	// Copy half of full MAC into buffer
+	strncpy(addr_buffer, full_mac, 9);
+	
+	// Replace trimmed characters with XX
+	strcat(addr_buffer, "XX:XX:XX");
+	
+	return(addr_buffer);
+}
+
+
+/*
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+
+#define OUIFILE "oui.txt"
+
+
+char* mac_get_manufacturer (char* oui)
+{
+	struct stat st;
+	char *str, *map, *off, *end;
+	int fd;
+
+	fd = open(OUIFILE, O_RDONLY);
+	if (fd < 0)
+		return NULL;
+
+	if (fstat(fd, &st) < 0) {
+		close(fd);
+		return NULL;
+	}
+
+	str = malloc(128);
+	if (!str) {
+		close(fd);
+		return NULL;
+	}
+
+	memset(str, 0, 128);
+
+	map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	if (!map || map == MAP_FAILED) {
+		free(str);
+		close(fd);
+		return NULL;
+	}
+
+	off = strstr(map, oui);
+	if (off) {
+		off += 18;
+		end = strpbrk(off, "\r\n");
+		strncpy(str, off, end - off);
+	} else {
+		free(str);
+		str = NULL;
+	}
+
+	munmap(map, st.st_size);
+
+	close(fd);
+
+	return str;
+}
+*/
+
+/*
+ * CRC functions based on CRC tester 1.3 written by Sven Reifegerste
+ * Available at: http://www.zorc.breitbandkatze.de/crc.html
+*/
+
 // Used internally for CRC
 unsigned long reflect (unsigned long crc, int bitnum)
 {
@@ -101,12 +231,16 @@ char* mac_encode (char* p)
 	unsigned long i, j, c, bit;
 	unsigned long crc = crcinit_direct;
 	
-	// Static length, fix this
+	// Static length, could be trouble
 	int len = 17;
 	
 	// For return formatting
 	static char addr[18] = {0};
 
+	// Verify first
+	if (mac_verify(p))
+		return("INVALID_MAC");
+	
 	for (i=0; i < len; i++)
 	{
 		c = (unsigned long)*p++;
