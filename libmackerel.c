@@ -9,8 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LIBVERSION "0.1"
-#define LIBNAME "libmackerel"
+#define MACKERELVERSION "0.5"
+
+// For OUI lookup
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+
+#define OUIFILE "oui.txt"
+#define TXTOFFSET 9
 
 // CRC parameters (default values are for CRC-32):
 const int order = 32;
@@ -59,7 +67,7 @@ int mac_init ()
 int mac_verify (char* test_mac)
 {	
 	int i;
-
+		
 	// Make sure it isn't null
 	if (test_mac == NULL)
 		return(1);
@@ -68,10 +76,10 @@ int mac_verify (char* test_mac)
 	if (strlen(test_mac) != 17)
 		return(1);
 		
-	// See if every 3rd character is a colon
-	for (i = 2; i < 17; i = i + 3)
+	// See if every 3rd character is a colon or dash
+	for (i = 2; i < 17; i += 3)
 	{
-		if ((int)test_mac[i] != 58)
+		if ((int)test_mac[i] != 58 && (int)test_mac[i] != 45)
 			return(1);
 	}
 		
@@ -81,7 +89,7 @@ int mac_verify (char* test_mac)
 
 // Generate random MAC address
 // Adapted from "SpoofTooph" by JP Dunning (.ronin)
-char* mac_random (void)
+char* mac_gen (void)
 {	
 	char addr_part[3] = {0};
 	static char addr[18] = {0};
@@ -90,14 +98,14 @@ char* mac_random (void)
 	// Fill in the middle
 	while ( i < 14)
 	{
-		sprintf(addr_part, "%02x", (rand() % 254));	
+		sprintf(addr_part, "%02X", (rand() % 254));	
 		addr[i++] = addr_part[0];
 		addr[i++] = addr_part[1];
 		addr[i++] = ':';
 	}
 
 	// Tack 2 more random characters to finish it
-	sprintf(addr_part, "%02x", (rand() % 254));	
+	sprintf(addr_part, "%02X", (rand() % 254));	
 	addr[i++] = addr_part[0];
 	addr[i++] = addr_part[1];
 
@@ -105,13 +113,13 @@ char* mac_random (void)
 }
 
 // Generate half of a random MAC address
-char* mac_random_half (void)
+char* mac_gen_half (void)
 {
 	static char half_buffer[9] = {0};
 	char *full_buffer = {0};
 	
 	// Get a new random MAC
-	full_buffer = mac_random();
+	full_buffer = mac_gen();
 	
 	// Copy half of it to buffer
 	strncpy(half_buffer, full_buffer, 8);
@@ -133,6 +141,26 @@ char* mac_get_oui (char* full_mac)
 	return(half_buffer);
 }
 
+// Return MAC in hex notation
+char* mac_get_hex (char* full_mac)
+{
+	// Verify first
+	if (mac_verify(full_mac))
+		return("INVALID_MAC");	
+	
+	int i;
+	static char addr_buffer[18] = {0};
+	
+	// Copy full MAC into buffer
+	strncpy(addr_buffer, full_mac, 17);
+	
+	// Replace every 3rd character with -
+	for (i = 2; i < 17; i += 3)
+		addr_buffer[i] = 45;
+	
+	return(addr_buffer);
+}
+
 // X out the device-specific part of MAC
 char* mac_obfuscate (char* full_mac)
 {
@@ -151,63 +179,62 @@ char* mac_obfuscate (char* full_mac)
 	return(addr_buffer);
 }
 
-
-/*
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-
-#define OUIFILE "oui.txt"
-
-
-char* mac_get_manufacturer (char* oui)
+// Return vendor from OUI database file
+char* mac_get_vendor (char* full_mac)
 {
+	char oui[9] = {0};
+			
+	// Return OUI (also verify)
+	strncpy(oui, mac_get_oui(mac_get_hex(full_mac)), 9);
+	
 	struct stat st;
 	char *str, *map, *off, *end;
 	int fd;
 
 	fd = open(OUIFILE, O_RDONLY);
 	if (fd < 0)
-		return NULL;
+		return("NO_OUI_FILE");
 
-	if (fstat(fd, &st) < 0) {
+	if (fstat(fd, &st) < 0)
+	{
 		close(fd);
-		return NULL;
+		return("CANT_STAT_FILE");
 	}
 
 	str = malloc(128);
-	if (!str) {
+	if (!str)
+	{
 		close(fd);
-		return NULL;
+		return("MALLOC_FAILED");
 	}
 
 	memset(str, 0, 128);
 
 	map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	if (!map || map == MAP_FAILED) {
+	if (!map || map == MAP_FAILED)
+	{
 		free(str);
 		close(fd);
-		return NULL;
+		return("MMAP_FAILED");
 	}
 
 	off = strstr(map, oui);
-	if (off) {
-		off += 18;
+	if (off)
+	{
+		off += TXTOFFSET;
 		end = strpbrk(off, "\r\n");
 		strncpy(str, off, end - off);
-	} else {
+	}
+	else
+	{
 		free(str);
-		str = NULL;
+		str = "No Record";
 	}
 
 	munmap(map, st.st_size);
-
 	close(fd);
-
 	return str;
 }
-*/
 
 /*
  * CRC functions based on CRC tester 1.3 written by Sven Reifegerste

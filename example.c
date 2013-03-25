@@ -17,18 +17,18 @@ int main()
 	for (i = 1; i <= 1; i++)
 	{
 		// Create random MAC, save to buffer
-		addr_buffer = mac_random();
-		
+		//addr_buffer = mac_gen();
+		addr_buffer = "E0:E7:51:B7:03:66";
 		// Print
 		printf("Random MAC: %s\n", addr_buffer);
 		printf("------------------------------------\n");
 	
 		// See if it's a MAC
-		if (mac_verify(addr_buffer) == 0)
+		if (mac_verify(mac_get_hex(addr_buffer)) == 0)
 			printf("This is a valid MAC.\n");
 		else
 			printf("This is not a valid MAC!\n");
-			
+		
 		// Print OUI
 		printf("OUI: %s\n", mac_get_oui(addr_buffer));
 		
@@ -37,14 +37,20 @@ int main()
 
 		// Obfuscate
 		printf("Anonymized: %s\n", mac_obfuscate(addr_buffer));
+					
+		// Hex version
+		printf("HEX notation: %s\n", mac_get_hex(addr_buffer));
 		
 		printf("\n");
 		
 		// Print a random OUI
-		printf("Random half MAC: %s\n", mac_random_half());
+		printf("Random half MAC: %s\n", mac_gen_half());
 		printf("------------------------------------\n");
 		
-		//printf("Manufacturer: %s\n", mac_get_manufacturer("f0def1"));
+		
+		
+		printf("Manufacturer: %s\n", mac_get_vendor(addr_buffer));
+	
 	}	
 	
 	return(0);
