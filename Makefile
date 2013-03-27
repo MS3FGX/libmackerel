@@ -1,5 +1,6 @@
 # App info
-APPNAME = example
+APPNAME = libmackerel
+VERSION = 1.0
 
 # Compiler and options
 CC = gcc
@@ -14,8 +15,8 @@ DOCS = ChangeLog COPYING README
 
 # Targets
 # Build
-$(APPNAME): library example.c
-	$(CC) $(CFLAGS) $(SOURCES) $(LIBS) -o $(APPNAME)
+all: library example.c
+	$(CC) $(CFLAGS) $(SOURCES) $(LIBS) -o example
 
 # Make object
 library: libmackerel.c
@@ -23,5 +24,9 @@ library: libmackerel.c
 
 # Clean for dist
 clean:
-	rm -rf $(APPNAME) *.o
+	rm -rf example *.o *.txt
+
+# Build tarball
+release: clean
+	tar --exclude='.*' -C ../ -czvf /tmp/$(APPNAME)-$(VERSION).tar.gz $(APPNAME)-$(VERSION)
 
