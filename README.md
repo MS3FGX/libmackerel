@@ -1,3 +1,5 @@
+![Mackerel](http://www.digifail.com/images/misc/mackerel_header.jpg "Mackerel")
+
 libmackerel
 ==============
 
