@@ -58,7 +58,7 @@ This function will return the name of the manufacturer for a given MAC using
 the IEEE database. To generate an up-to-date local copy of the database for
 libmackerel, use the included "gen_oui.sh" script.
 
-Acknowledgements                                                             -
+Acknowledgements
 ==============
 
 libmackerel implements a modified version of the CRC hashing functions from
