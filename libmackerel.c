@@ -5,11 +5,12 @@
  *  For more information, see: www.digifail.com
  */
 
+#define MACKERELVERSION "1.0"
+
 #include <time.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define MACKERELVERSION "0.5"
 
 // For OUI lookup
 #include <fcntl.h>
@@ -17,7 +18,10 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+// OUI file parameters
+// Point to valid file
 #define OUIFILE "oui.txt"
+// Characters until vendor name starts
 #define TXTOFFSET 9
 
 // CRC parameters (default values are for CRC-32):
@@ -89,7 +93,7 @@ int mac_verify (char* test_mac)
 
 // Generate random MAC address
 // Adapted from "SpoofTooph" by JP Dunning (.ronin)
-char* mac_gen (void)
+char* mac_rand ()
 {	
 	char addr_part[3] = {0};
 	static char addr[18] = {0};
@@ -113,13 +117,13 @@ char* mac_gen (void)
 }
 
 // Generate half of a random MAC address
-char* mac_gen_half (void)
+char* mac_rand_half (void)
 {
 	static char half_buffer[9] = {0};
 	char *full_buffer = {0};
 	
 	// Get a new random MAC
-	full_buffer = mac_gen();
+	full_buffer = mac_rand();
 	
 	// Copy half of it to buffer
 	strncpy(half_buffer, full_buffer, 8);
@@ -254,7 +258,7 @@ unsigned long reflect (unsigned long crc, int bitnum)
 }
 
 // Encode MAC with CRC32
-char* mac_encode (char* p)
+char* mac_encode (char* full_mac)
 {
 	unsigned long i, j, c, bit;
 	unsigned long crc = crcinit_direct;
@@ -266,12 +270,12 @@ char* mac_encode (char* p)
 	static char addr[18] = {0};
 
 	// Verify first
-	if (mac_verify(p))
+	if (mac_verify(full_mac))
 		return("INVALID_MAC");
 	
 	for (i=0; i < len; i++)
 	{
-		c = (unsigned long)*p++;
+		c = (unsigned long)*full_mac++;
 		if (refin) c = reflect(c, 8);
 
 		for (j=0x80; j; j>>=1) {

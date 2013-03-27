@@ -9,15 +9,19 @@ CFLAGS += -Wall -O2
 LIBS = 
 
 # Files
-SOURCES = example.c
+SOURCES = example.c libmackerel.o
 DOCS = ChangeLog COPYING README
 
 # Targets
 # Build
-$(APPNAME): $(SOURCES)
+$(APPNAME): library example.c
 	$(CC) $(CFLAGS) $(SOURCES) $(LIBS) -o $(APPNAME)
+
+# Make object
+library: libmackerel.c
+	$(CC) $(FLAGS) -c libmackerel.c
 
 # Clean for dist
 clean:
-	rm -rf $(APPNAME) 
+	rm -rf $(APPNAME) *.o
 
