@@ -18,7 +18,7 @@ int main()
 	{
 		// Create random MAC, save to buffer
 		//addr_buffer = mac_gen();
-		addr_buffer = "E0:E7:51:B7:03:66";
+		addr_buffer = "00:23:D6:B7:03:66";
 		// Print
 		printf("Random MAC: %s\n", addr_buffer);
 		printf("------------------------------------\n");

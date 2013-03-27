@@ -180,12 +180,13 @@ char* mac_obfuscate (char* full_mac)
 }
 
 // Return vendor from OUI database file
+// Modified from functions in oui.c from BlueZ
 char* mac_get_vendor (char* full_mac)
 {
 	char oui[9] = {0};
 			
 	// Return OUI (also verify)
-	strncpy(oui, mac_get_oui(mac_get_hex(full_mac)), 9);
+	strncpy(oui, mac_get_oui(full_mac), 9);
 	
 	struct stat st;
 	char *str, *map, *off, *end;
