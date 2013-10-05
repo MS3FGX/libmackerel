@@ -1,4 +1,4 @@
-![Mackerel](http://www.digifail.com/images/misc/mackerel_header.jpg "Mackerel")
+![Mackerel](http://www.digifail.com/images/misc/github/mackerel_header.jpg "Mackerel")
 
 libmackerel
 ==============
