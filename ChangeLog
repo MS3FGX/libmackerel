@@ -1,3 +1,6 @@
+10/14/13: Version 1.1
+	Fix buffer overflow in mac_obfuscate
+
 03/27/13: First Public Release
 	Can create, verify, manipulate MACs
 	Documentation passable
